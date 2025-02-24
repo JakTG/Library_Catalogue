@@ -1,79 +1,55 @@
 import streamlit as st
-import os
-import shutil
-from zipfile import ZipFile
+import io
+import csv
+import pandas as pd
 
-def delete_folder(folder_path):
-    try:
-        shutil.rmtree(folder_path)  # Remove the folder and all its contents (files and subdirectories)
-        print(f'Folder {folder_path} deleted successfully.')
-    except Exception as e:
-        print(f'Failed to delete {folder_path}. Reason: {e}')
+# Display picture
+st.image("https://www.workspace-interiors.co.uk/application/files/thumbnails/xs/3416/1530/8285/tony_gee_large_logo_no_background.png", width=250)
 
-#delete folders
-delete_folder("DWG_Reports")
-delete_folder("Output_Reports")
+# Title and Description
+st.title("Tony Gee, Library Catalogue Automation")
+st.write("Enter information on your books to catalogue manually.")
 
-# Folder where the uploaded files will be saved
-# Create the folder if it doesn't exist
-upload_folder = "DWG_Reports"
-if not os.path.exists(upload_folder):
-    os.makedirs(upload_folder)
-output_folder = "Output_Reports"
-if not os.path.exists(output_folder):
-    os.makedirs(output_folder)
+# Office selection drop-down
+office = st.selectbox("Select Office", ["Manchester", "Esher", "Birmingham", "Stonehouse"])
 
-# Streamlit title and description
-st.image("https://www.workspace-interiors.co.uk/application/files/thumbnails/xs/3416/1530/8285/tony_gee_large_logo_no_background.png",width=250)
-st.title("Tony Gee, library catalogue automation")
-st.write("Enter information on your books to catalogue.")
+# Instructions for entering book data
+st.write("""
+Enter book data in CSV format.  
+Each line should contain three fields in this order:  
+1. **Name**  
+2. **Edition** (enter "N/A" if not applicable)  
+3. **Author**  
 
-# File uploader widget (allows multiple files)
-uploaded_files = st.file_uploader("Upload Files", type=None, accept_multiple_files=True)
+If a field (such as Author) contains commas (for example, for multiple authors), enclose that field in double quotes.
+""")
 
-# Variable to track if files were uploaded
-files_uploaded = False
+# Input text area for book data
+book_data = st.text_area(
+    "Enter Book Data",
+    '''WW1,1st edition,"Simons, Menzies and Matthews"
+Advanced National Certificate,N/A,Pedoe
+Modern Architecture,N/A,"Smith, Johnson, and Lee"'''
+)
 
-# Process and save each uploaded file
-if uploaded_files:
-    for uploaded_file in uploaded_files:
-        # Get the file details
-        file_name = uploaded_file.name
-        file_path = os.path.join(upload_folder, file_name)
-
-        # Save the uploaded file to the folder
-        with open(file_path, "wb") as f:
-            f.write(uploaded_file.getbuffer())
-
-        # Show a success message for each uploaded file
-        st.success(f"File '{file_name}' uploaded successfully!")
-
-    # Set flag to true if files have been uploaded
-    files_uploaded = True
-
-# Display a button to run code if files have been uploaded
-if files_uploaded:
-    # Show a button
-    if st.button("Process Uploaded Files"):
-        # Your custom code goes here
-        st.write("Processing files...")
-
-        # Example: Just list the files in the uploaded folder
-        for fileRead in os.listdir(upload_folder):
-            st.write(f"Processing file: {fileRead}")
-            AutomationReport.main(fileRead)
-
-        # Add custom logic here to process the uploaded files
-        st.success("File processing complete!")
-
-        zip_path = "processed_files.zip"
-        with ZipFile(zip_path, 'w') as zipf:
-            for root, dirs, files in os.walk(output_folder):
-                for file in files:
-                    zipf.write(os.path.join(root, file), arcname=file)
-        
-        # 4. Add Download Button for Processed Files
-        with open(zip_path, "rb") as f:
-            st.download_button(label="Download Processed Files", 
-                               data=f, 
-                               file_name="processed_files.zip")
+# Process the input and generate the catalogued table and download button
+if st.button("Submit Book Data"):
+    books = []
+    f = io.StringIO(book_data)
+    reader = csv.reader(f, skipinitialspace=True)
+    for row in reader:
+        if len(row) != 3:
+            st.error("Each line must contain exactly three fields: Name, Edition, and Author.")
+            books = []  # Reset if an error is encountered
+            break
+        name, edition, author = row
+        books.append({"Name": name, "Edition": edition, "Author": author})
+    
+    if books:
+        df_books = pd.DataFrame(books)
+        st.write("Catalogued Books:")
+        st.dataframe(df_books)
+        # Create a CSV file from the DataFrame for download
+        csv_file = df_books.to_csv(index=False).encode("utf-8")
+        file_name = f"{office}_catalogued_library.csv"
+        st.download_button("Download Catalogued Books CSV", csv_file, file_name, "text/csv")
