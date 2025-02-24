@@ -8,7 +8,7 @@ st.image("https://www.workspace-interiors.co.uk/application/files/thumbnails/xs/
 
 # Title and description
 st.title("Tony Gee, Library Catalogue Automation")
-st.write("Enter information on your books to catalogue manually.")
+st.write("Enter information on your books to automate.")
 
 # Office selection drop-down
 office = st.selectbox("Select Office", ["Manchester", "Esher", "Birmingham", "Stonehouse"])
