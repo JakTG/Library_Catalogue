@@ -53,7 +53,14 @@ if st.button("Submit Book Data"):
         df_books = pd.DataFrame(books)
         st.write("Catalogued Books:")
         st.dataframe(df_books)
-        # Create a CSV file from the DataFrame for download
-        csv_file = df_books.to_csv(index=False).encode("utf-8")
-        file_name = f"{office}_catalogued_library.csv"
-        st.download_button("Download Catalogued Books CSV", csv_file, file_name, "text/csv")
+        
+        # Create an Excel file from the DataFrame using an in-memory bytes buffer
+        output = io.BytesIO()
+        with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+            df_books.to_excel(writer, index=False, sheet_name='Catalogued Books')
+            writer.save()
+        excel_data = output.getvalue()
+        file_name = f"{office}_catalogued_library.xlsx"
+        
+        # Download button for Excel file
+        st.download_button("Download Catalogued Books Excel", excel_data, file_name, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
