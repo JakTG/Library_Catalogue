@@ -2,18 +2,31 @@ import streamlit as st
 from PIL import Image, ImageEnhance
 import pytesseract
 import pandas as pd
+import io
 
 # Initialize session state to hold book data if it doesn't exist yet
 if 'book_data' not in st.session_state:
     st.session_state.book_data = []
-st.image("https://www.workspace-interiors.co.uk/application/files/thumbnails/xs/3416/1530/8285/tony_gee_large_logo_no_background.png", width=250)
-st.title("Book OCR Extraction with Editable Table")
-st.write(
-    """
-Upload an image of a book. The app will preprocess the image, extract text via OCR, allow you to correct the text and select the Title, Edition, and Author. 
-Then, click **Add Book Data** to append the information to a table. You can edit the table and add additional entries by uploading another image.
-    """
-)
+
+# Title and description
+st.title("Book OCR Extraction with Editable Catalogue")
+st.write("This app extracts book information from images using OCR, lets you correct/select fields, and compiles everything into an editable table.")
+
+# How the app works expander
+with st.expander("How the app works"):
+    st.write(
+        """
+1. **Upload an Image:** Upload an image of a book. The app preprocesses the image (converts to grayscale & enhances contrast).
+2. **OCR Extraction:** The app extracts text using OCR. You can edit the extracted text if needed.
+3. **Select Fields:** Choose the appropriate lines for the Title, Edition (with an extra "N/A" option), and Author.
+4. **Add Book Data:** Click **Add Book Data** to append the information to the catalogue table.
+5. **Select Office:** Use the drop-down to select your office.
+6. **Download Catalogue:** Click **Process & Download Catalogue** to download the table as an Excel file, named based on your office.
+        """
+    )
+
+# Office selection drop-down
+office = st.selectbox("Select Your Office", ["Manchester", "Esher", "Birmingham", "Stonehouse"])
 
 # Image uploader
 uploaded_file = st.file_uploader("Choose an image", type=["png", "jpg", "jpeg"])
@@ -56,12 +69,18 @@ if uploaded_file:
 
 # Display the editable table if there is any data
 if st.session_state.book_data:
-    st.subheader("Catalogued Books")
-    # Convert the list of dictionaries to a DataFrame
+    st.subheader("Catalogue of Books")
     df_books = pd.DataFrame(st.session_state.book_data)
-    
-    # Use the data editor (allows editing) and allow dynamic row edits
     edited_df = st.data_editor(df_books, num_rows="dynamic", key="data_editor")
-    
-    # Update session state with any changes made in the data editor
     st.session_state.book_data = edited_df.to_dict("records")
+
+# Process & Download Catalogue Button
+if st.session_state.book_data:
+    if st.button("Process & Download Catalogue"):
+        # Convert the DataFrame to an Excel file in-memory using openpyxl
+        output = io.BytesIO()
+        with pd.ExcelWriter(output, engine='openpyxl') as writer:
+            df_books.to_excel(writer, index=False, sheet_name='Catalogue')
+        excel_data = output.getvalue()
+        file_name = f"{office}_automated_catalogue.xlsx"
+        st.download_button("Download Catalogue", excel_data, file_name, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
