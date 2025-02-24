@@ -9,6 +9,7 @@ if 'book_data' not in st.session_state:
     st.session_state.book_data = []
 
 # Title and description
+st.image("https://www.workspace-interiors.co.uk/application/files/thumbnails/xs/3416/1530/8285/tony_gee_large_logo_no_background.png", width=250)
 st.title("Book OCR Extraction with Editable Catalogue")
 st.write("This app extracts book information from images using OCR, lets you correct/select fields, and compiles everything into an editable table.")
 
