@@ -8,7 +8,7 @@ st.image("https://www.workspace-interiors.co.uk/application/files/thumbnails/xs/
 
 # Title and description
 st.title("Tony Gee, Library Catalogue Automation")
-st.write("Enter information on your books to automate.")
+st.write("Enter information on your books to catalogue manually.")
 
 # Office selection drop-down
 office = st.selectbox("Select Office", ["Manchester", "Esher", "Birmingham", "Stonehouse"])
@@ -54,11 +54,10 @@ if st.button("Submit Book Data"):
         st.write("Catalogued Books:")
         st.dataframe(df_books)
         
-        # Create an Excel file from the DataFrame using an in-memory bytes buffer
+        # Create an Excel file from the DataFrame using an in-memory bytes buffer and openpyxl as the engine
         output = io.BytesIO()
-        with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+        with pd.ExcelWriter(output, engine='openpyxl') as writer:
             df_books.to_excel(writer, index=False, sheet_name='Catalogued Books')
-            writer.save()
         excel_data = output.getvalue()
         file_name = f"{office}_catalogued_library.xlsx"
         
