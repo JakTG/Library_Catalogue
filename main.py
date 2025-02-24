@@ -4,8 +4,9 @@ import pytesseract
 
 # Optionally, specify the Tesseract executable path if not in your PATH:
 # pytesseract.pytesseract.tesseract_cmd = r'/usr/bin/tesseract'
+st.image("https://www.workspace-interiors.co.uk/application/files/thumbnails/xs/3416/1530/8285/tony_gee_large_logo_no_background.png", width=250)
 
-st.title("Book OCR Extraction with Manual Field Selection")
+st.title("Tony Gee, library catalogue automation")
 st.write("Upload an image of a book. The app will extract text via OCR and then let you choose which lines correspond to the Title, Edition, and Author.")
 
 # Image uploader
