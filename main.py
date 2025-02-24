@@ -25,8 +25,8 @@ if not os.path.exists(output_folder):
 
 # Streamlit title and description
 st.image("https://www.workspace-interiors.co.uk/application/files/thumbnails/xs/3416/1530/8285/tony_gee_large_logo_no_background.png",width=250)
-st.title("Tony Gee Manchester, Power and energy")
-st.write("Drag and drop CSV files below to upload them.")
+st.title("Tony Gee, library catalogue automation")
+st.write("Enter information on your books to catalogue.")
 
 # File uploader widget (allows multiple files)
 uploaded_files = st.file_uploader("Upload Files", type=None, accept_multiple_files=True)
