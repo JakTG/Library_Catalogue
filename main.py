@@ -17,12 +17,12 @@ st.write("This app extracts book information from images using OCR, lets you cor
 with st.expander("How the app works"):
     st.write(
         """
-1. **Upload an Image:** Upload an image of a book. The app preprocesses the image (converts to grayscale & enhances contrast).
+1. **Upload an Image:** Upload an image of a book. The app preprocesses the image.
 2. **OCR Extraction:** The app extracts text using OCR. You can edit the extracted text if needed.
 3. **Select Fields:** Choose the appropriate lines for the Title, Edition (with an extra "N/A" option), and Author.
 4. **Add Book Data:** Click **Add Book Data** to append the information to the catalogue table.
 5. **Select Office:** Use the drop-down to select your office.
-6. **Download Catalogue:** Click **Process & Download Catalogue** to download the table as an Excel file, named based on your office.
+6. **Download Catalogue:** Click **Process & Download Catalogue** to download the table as an Excel file with all your catalogued information.
         """
     )
 
