@@ -4,6 +4,8 @@ import pytesseract
 import pandas as pd
 import io
 
+# Integration of a cloud API to provide OCR reading- to improve the accuracy of text extraction(it could maybe increase the reading accuracy)
+
 # Initialize session state to hold book data if it doesn't exist yet
 if 'book_data' not in st.session_state:
     st.session_state.book_data = []
