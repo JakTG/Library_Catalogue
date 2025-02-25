@@ -11,7 +11,7 @@ if 'book_data' not in st.session_state:
 # Title and description
 st.image("https://www.workspace-interiors.co.uk/application/files/thumbnails/xs/3416/1530/8285/tony_gee_large_logo_no_background.png", width=250)
 st.title("Book OCR Extraction with Editable Catalogue")
-st.write("This app extracts book information from images using OCR, lets you correct/select fields, and compiles everything into an editable table.")
+st.write("Automated app to extract information from images using OCR, allowing users to correct fields and compile everything into a ready made excel file.")
 
 # How the app works expander
 with st.expander("How the app works"):
@@ -29,14 +29,14 @@ with st.expander("How the app works"):
 # Office selection drop-down
 office = st.selectbox("Select Your Office", ["Manchester", "Esher", "Birmingham", "Stonehouse"])
 
-# Image uploader
+# Image uploader, change these file types
 uploaded_file = st.file_uploader("Choose an image", type=["png", "jpg", "jpeg"])
 
 if uploaded_file:
     # Open the image
     image = Image.open(uploaded_file)
     
-    # Preprocess: convert to grayscale and enhance contrast
+    # Preprocess: convert to grayscale and enhance contrast, change this, it may be stopping the visiblility of the image that is being uploaded
     gray_image = image.convert("L")
     enhancer = ImageEnhance.Contrast(gray_image)
     enhanced_image = enhancer.enhance(2)
