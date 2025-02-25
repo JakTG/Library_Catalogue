@@ -16,7 +16,7 @@ st.title("Book OCR Extraction with Editable Catalogue")
 st.write("Automated app to extract information from images using OCR, allowing users to correct fields and compile everything into a ready made excel file.")
 
 # How the app works expander
-with st.expander("How the app works"):
+with st.expander("How to use the app "):
     st.write(
         """
 1. **Upload an Image:** Upload an image of a book. The app preprocesses the image.
@@ -38,7 +38,7 @@ if uploaded_file:
     # Open the image
     image = Image.open(uploaded_file)
     
-    # Preprocess: convert to grayscale and enhance contrast, change this, it may be stopping the visiblility of the image that is being uploaded
+    # Preprocess: convert the image maybe to Binary thresh so then it picks up the image better. At the minute the picture is reading certain things but not everything in 
     gray_image = image.convert("L")
     enhancer = ImageEnhance.Contrast(gray_image)
     enhanced_image = enhancer.enhance(2)
