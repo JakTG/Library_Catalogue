@@ -39,6 +39,7 @@ if uploaded_file:
     image = Image.open(uploaded_file)
     
     # Preprocess: convert the image maybe to Binary thresh so then it picks up the image better. At the minute the picture is reading certain things but not everything in 
+    # convert image back to colour and change font- take into consideration the quality of the picture it could affect the OCR image
     gray_image = image.convert("L")
     enhancer = ImageEnhance.Contrast(gray_image)
     enhanced_image = enhancer.enhance(2)
