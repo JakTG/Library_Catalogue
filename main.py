@@ -1,3 +1,4 @@
+# Packages- look into adding Open AI API
 import streamlit as st
 from PIL import Image, ImageEnhance
 import pytesseract
@@ -5,6 +6,7 @@ import pandas as pd
 import io
 
 # Integration of a cloud API to provide OCR reading- to improve the accuracy of text extraction(it could maybe increase the reading accuracy)
+# API will not work with the requirements-
 
 # Initialize session state to hold book data if it doesn't exist yet
 if 'book_data' not in st.session_state:
@@ -71,12 +73,15 @@ if uploaded_file:
             st.session_state.book_data.append(new_entry)
             st.success("Book data added to the table!")
 
+
+
 # Display the editable table if there is any data
 if st.session_state.book_data:
     st.subheader("Catalogue of Books")
     df_books = pd.DataFrame(st.session_state.book_data)
     edited_df = st.data_editor(df_books, num_rows="dynamic", key="data_editor")
     st.session_state.book_data = edited_df.to_dict("records")
+    
 
 # Process & Download Catalogue Button
 if st.session_state.book_data:
