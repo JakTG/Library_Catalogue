@@ -4,9 +4,12 @@ from PIL import Image, ImageEnhance
 import pytesseract
 import pandas as pd
 import io
+# import Img_folder
 
 # Integration of a cloud API to provide OCR reading- to improve the accuracy of text extraction(it could maybe increase the reading accuracy)
-# API will not work with the requirements-
+
+
+# File paths- maybe just use a folder and import the image folder
 
 # Initialize session state to hold book data if it doesn't exist yet
 if 'book_data' not in st.session_state:
@@ -67,12 +70,14 @@ if uploaded_file:
         edition_options = ["N/A"] + lines
         edition = st.selectbox("Select the Edition", edition_options, index=0)
         author = st.selectbox("Select the Author", lines, index=len(lines)-1)
-        
+
+
+
+        # integrate Open AI API, once the button is clicked it will automate the process of adding it to the excel
         if st.button("Add Book Data"):
             new_entry = {"Title": title, "Edition": edition, "Author": author}
             st.session_state.book_data.append(new_entry)
             st.success("Book data added to the table!")
-
 
 
 # Display the editable table if there is any data
@@ -93,3 +98,31 @@ if st.session_state.book_data:
         excel_data = output.getvalue()
         file_name = f"{office}_automated_catalogue.xlsx"
         st.download_button("Download Catalogue", excel_data, file_name, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+
+
+
+# For loop to allow the loop from all of the images- include this in the function so that it will pass a parameter into the function
+# For images in Img_folder:
+    # Process_image = 
+    # Process_image.append()- to the excel spreadsheet, first to the catalogue
+
+
+#########################################
+# For loop requirements-
+#1) Loop through all of the folder to cycle through images
+#2) Call the OCR function to perform the image reading process
+
+
+
+
+########################################
+# Improving quality techniques
+# 1) Converting image to gray scale- Done
+# 2) changing the threshold of the image and using Binary and OTSU packages
+# 3) Configuring the image to string- '--psm 6'
+# 4) 
+
+
+
+
+
