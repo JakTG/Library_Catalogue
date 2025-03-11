@@ -8,7 +8,7 @@ import io
 
 # Integrate OpenAI API- to automate the task of adding the data- it may not be necessary as it is required to do typo errors etc
 # Instead of just trying to read the image- try to extract the text out of the image- may remove the difficulty with reading fonts and watermarks
-# Binary threshhold with OCR make sure to change
+# Binary threshold with OCR make sure to change
 
 
 # File paths- maybe just use a folder and import the image folder
