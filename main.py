@@ -6,7 +6,7 @@ import pandas as pd
 import io
 # import Img_folder
 
-# Integration of a cloud API to provide OCR reading- to improve the accuracy of text extraction(it could maybe increase the reading accuracy)
+# Integrate OpenAI API- to automate the task of adding the data- it may not be necessary as it is required to do typo errors etc
 
 
 # File paths- maybe just use a folder and import the image folder
@@ -24,12 +24,12 @@ st.write("Automated app to extract information from images using OCR, allowing u
 with st.expander("How to use the app "):
     st.write(
         """
-1. **Upload an Image:** Upload an image of a book. The app preprocesses the image.
-2. **OCR Extraction:** The app extracts text using OCR. You can edit the extracted text if needed.
-3. **Select Fields:** Choose the appropriate lines for the Title, Edition (with an extra "N/A" option), and Author.
-4. **Add Book Data:** Click **Add Book Data** to append the information to the catalogue table.
-5. **Select Office:** Use the drop-down to select your office.
-6. **Download Catalogue:** Click **Process & Download Catalogue** to download the table as an Excel file with all your catalogued information.
+1. Upload an Image: Upload an image of a book. The app preprocesses the image.
+2. OCR Extraction: The app extracts text using OCR. You can edit the extracted text if needed.
+3. Select Fields: Choose the appropriate lines for the Title, Edition (with an extra "N/A" option), and Author.
+4. Add Book Data: Click **Add Book Data** to append the information to the catalogue table.
+5. Select Office: Use the drop-down to select your office.
+6. Download Catalogue: Click **Process & Download Catalogue** to download the table as an Excel file with all your catalogued information.
         """
     )
 
