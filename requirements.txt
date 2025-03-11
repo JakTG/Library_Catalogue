@@ -43,5 +43,3 @@ urllib3==2.3.0
 watchdog==6.0.0
 xlsxwriter
 pytesseract
-pyzbar
-opencv
