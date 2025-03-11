@@ -76,7 +76,7 @@ if uploaded_file:
 
         # integrate Open AI API, once the button is clicked it will automate the process of adding it to the excel
         if st.button("Add Book Data"):
-            new_entry = {"Image": image(enhanced_image, width=200), "Title": title, "Edition": edition, "Author": author}
+            new_entry = {"Image": image, "Title": title, "Edition": edition, "Author": author}
             st.session_state.book_data.append(new_entry)
             st.success("Book data added to the table!")
 
