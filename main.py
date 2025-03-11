@@ -7,6 +7,7 @@ import io
 # import Img_folder
 
 # Integrate OpenAI API- to automate the task of adding the data- it may not be necessary as it is required to do typo errors etc
+# Instead of just trying to read the image- try to extract the text out of the image- may remove the difficulty with reading fonts and watermarks
 
 
 # File paths- maybe just use a folder and import the image folder
@@ -101,7 +102,7 @@ if st.session_state.book_data:
 
 
 
-# For loop to allow the loop from all of the images- include this in the function so that it will pass a parameter into the function
+# For loop to allow the loop from all of the images- include this in the function so that it will pass a parameter into the function, going to loop through the 
 # For images in Img_folder:
     # Process_image = 
     # Process_image.append()- to the excel spreadsheet, first to the catalogue
@@ -120,7 +121,8 @@ if st.session_state.book_data:
 # 1) Converting image to gray scale- Done
 # 2) changing the threshold of the image and using Binary and OTSU packages
 # 3) Configuring the image to string- '--psm 6'
-# 4) 
+# 4) Binary thresh- could be used to make the image nothing but the text- can help with removing watermarks 
+# 5) OpenAI API to allow the automation of adding the items to the catalogue
 
 
 
