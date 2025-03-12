@@ -46,10 +46,9 @@ if uploaded_file:
     
     # Preprocess: convert the image maybe to Binary thresh so then it picks up the image better. At the minute the picture is reading certain things but not everything in 
     # convert image back to colour and change font- take into consideration the quality of the picture it could affect the OCR image
-    im = image.filter(image.MedianFilter())
-    enhancer = ImageEnhance.Contrast(im)
+    enhancer = ImageEnhance.Contrast(image)
     enhanced_image = enhancer.enhance(2)
-    final_image = im.convert('1')
+    final_image = image.convert('1')
     
     # Display the processed image (smaller size)
     st.image(enhanced_image, caption="Processed Image", width=200)
