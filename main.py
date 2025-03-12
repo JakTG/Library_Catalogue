@@ -26,12 +26,11 @@ st.write("Automated app to extract information from images using OCR, allowing u
 with st.expander("How to use the app "):
     st.write(
         """
-1. Upload an Image: Upload an image of a book. The app preprocesses the image.
-2. OCR Extraction: The app extracts text using OCR. You can edit the extracted text if needed.
-3. Select Fields: Choose the appropriate lines for the Title, Edition (with an extra "N/A" option), and Author.
-4. Add Book Data: Click **Add Book Data** to append the information to the catalogue table.
-5. Select Office: Use the drop-down to select your office.
-6. Download Catalogue: Click **Process & Download Catalogue** to download the table as an Excel file with all your catalogued information.
+1. Upload folder of images of books/barcodes ready to be scanned
+2. Select the office you are from to extract the books accordingly
+3. Pytesseract OCR will be used to read the images that you have inputted
+4. An Automated catalogued library will appear with all the information from your images uploaded
+5. Download the catalogue library and it will be exported into a xlsx file ready to be used
         """
     )
 
@@ -47,9 +46,10 @@ if uploaded_file:
     
     # Preprocess: convert the image maybe to Binary thresh so then it picks up the image better. At the minute the picture is reading certain things but not everything in 
     # convert image back to colour and change font- take into consideration the quality of the picture it could affect the OCR image
-    gray_image = image.convert("L")
-    enhancer = ImageEnhance.Contrast(gray_image)
+    im = image.filter(image.MedianFilter())
+    enhancer = ImageEnhance.Contrast(im)
     enhanced_image = enhancer.enhance(2)
+    final_image = im.convert('1')
     
     # Display the processed image (smaller size)
     st.image(enhanced_image, caption="Processed Image", width=200)
