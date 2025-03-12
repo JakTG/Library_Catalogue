@@ -38,7 +38,7 @@ with st.expander("How to use the app "):
 office = st.selectbox("Select Your Office", ["Manchester", "Esher", "Birmingham", "Stonehouse"])
 
 # Image uploader, change these file types
-uploaded_file = st.file_uploader("Choose an image", type=["png", "jpg", "jpeg"])
+uploaded_file = st.file_uploader("Choose an image", type=["png", "jpg", "jpeg"], accept_multiple_files=True)
 
 if uploaded_file:
     # Open the image
