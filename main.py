@@ -53,8 +53,8 @@ if uploaded_file:
     # Display the processed image (smaller size)
     st.image(enhanced_image, caption="Processed Image", width=200)
     
-    # Perform OCR on the enhanced image
-    extracted_text = pytesseract.image_to_string(enhanced_image)
+    # Perform OCR on the enhanced image, check if this configuration can be configed to psm 6 to improve accuracy
+    extracted_text = pytesseract.image_to_string(enhanced_image) # config='--psm 6'
     
     st.subheader("OCR Extracted Text")
     st.text(extracted_text)
