@@ -32,11 +32,18 @@ office = st.selectbox("Select Your Office", ["Manchester", "Esher", "Birmingham"
 # Image uploader (accepts up to 50 files)
 uploaded_files = st.file_uploader("Choose up to 50 images", type=["png", "jpg", "jpeg"], accept_multiple_files=True)
 
+# Clear session state when new images are uploaded
+if uploaded_files and 'last_uploaded_files' in st.session_state:
+    if set([file.name for file in uploaded_files]) != set(st.session_state.last_uploaded_files):
+        st.session_state.book_data = []  # Reset catalog when new images are uploaded
+st.session_state.last_uploaded_files = [file.name for file in uploaded_files] if uploaded_files else []
+
 def preprocess_image(image):
     # Convert to grayscale
     image = image.convert('L')
     
-    # Enhance contrast
+    # Apply adaptive thresholding (binarization)
+    image = ImageOps.autocontrast(image)
     enhancer = ImageEnhance.Contrast(image)
     image = enhancer.enhance(3)
     
@@ -53,7 +60,7 @@ if uploaded_files:
         image = preprocess_image(image)
         
         # Perform OCR with optimized settings
-        custom_config = "--psm 6 --oem 3"
+        custom_config = "--psm 4 --oem 3"
         extracted_text = pytesseract.image_to_string(image, config=custom_config)
         
         # Extract non-empty lines
