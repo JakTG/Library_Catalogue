@@ -76,19 +76,17 @@ if uploaded_files:
         author = lines[2] if len(lines) > 2 else "Unknown"
         
         # Append to session state book data
-        new_entry = {"Image": file, "Title": title, "Edition": edition, "Author": author}
+        new_entry = {"Image": file.name, "Title": title, "Edition": edition, "Author": author}
         st.session_state.book_data.append(new_entry)
     
     st.success("All images processed and added to the catalog!")
 
-# Display the catalog with images
+# Display the catalog
 if st.session_state.book_data:
     st.subheader("Catalogue of Books")
     df_books = pd.DataFrame(st.session_state.book_data).drop_duplicates()
     st.session_state.book_data = df_books.to_dict("records")  # Ensure no duplicates persist
-    
-    # Display images and catalog data
-    st.write(df_books)
+    st.dataframe(df_books)
     
     # Create Excel file and provide download button
     output = io.BytesIO()
