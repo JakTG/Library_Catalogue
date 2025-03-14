@@ -33,10 +33,11 @@ office = st.selectbox("Select Your Office", ["Manchester", "Esher", "Birmingham"
 uploaded_files = st.file_uploader("Choose up to 50 images", type=["png", "jpg", "jpeg"], accept_multiple_files=True)
 
 # Clear session state when new images are uploaded
-if uploaded_files and 'last_uploaded_files' in st.session_state:
-    if set([file.name for file in uploaded_files]) != set(st.session_state.last_uploaded_files):
-        st.session_state.book_data = []  # Reset catalog when new images are uploaded
-st.session_state.last_uploaded_files = [file.name for file in uploaded_files] if uploaded_files else []
+if uploaded_files:
+    if 'last_uploaded_files' in st.session_state:
+        if set(file.name for file in uploaded_files) != set(st.session_state.last_uploaded_files):
+            st.session_state.book_data = []  # Reset catalog when new images are uploaded
+    st.session_state.last_uploaded_files = [file.name for file in uploaded_files]
 
 def preprocess_image(image):
     # Convert to grayscale
@@ -53,7 +54,12 @@ def preprocess_image(image):
     return image
 
 if uploaded_files:
+    processed_files = set()
     for file in uploaded_files:
+        if file.name in processed_files:
+            continue  # Skip duplicate processing
+        processed_files.add(file.name)
+        
         image = Image.open(file)
         
         # Process image
@@ -80,13 +86,14 @@ if uploaded_files:
 # Display the catalog if there is any data
 if st.session_state.book_data:
     st.subheader("Catalogue of Books")
-    df_books = pd.DataFrame(st.session_state.book_data)
+    df_books = pd.DataFrame(st.session_state.book_data).drop_duplicates()
+    st.session_state.book_data = df_books.to_dict("records")  # Ensure no duplicates persist
     st.dataframe(df_books)
 
-    # Process & Download Catalogue Button
-    if st.button("Download Catalogue as CSV"):
-        output = io.BytesIO()
-        df_books.to_csv(output, index=False)
-        output.seek(0)
-        file_name = f"{office}_automated_catalogue.csv"
-        st.download_button("Download Catalogue", output, file_name, "text/csv")
+# Process & Download Catalogue Button
+if st.session_state.book_data and st.button("Download Catalogue as CSV"):
+    output = io.BytesIO()
+    df_books.to_csv(output, index=False)
+    output.seek(0)
+    file_name = f"{office}_automated_catalogue.csv"
+    st.download_button("Download Catalogue", output, file_name, "text/csv")
