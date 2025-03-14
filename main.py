@@ -1,12 +1,14 @@
 import streamlit as st
-from PIL import Image, ImageEnhance
+from PIL import Image, ImageEnhance, ImageFilter
 import pytesseract
 import pandas as pd
 import io
 
-# Initialize session state to hold book data if it doesn't exist yet
+# Initialize session state to hold book data and current image index
 if 'book_data' not in st.session_state:
     st.session_state.book_data = []
+if 'current_image_index' not in st.session_state:
+    st.session_state.current_image_index = 0
 
 # Title and description
 st.image("https://www.workspace-interiors.co.uk/application/files/thumbnails/xs/3416/1530/8285/tony_gee_large_logo_no_background.png", width=250)
@@ -21,7 +23,8 @@ with st.expander("How to use the app"):
         2. Select the office location.
         3. The app extracts text from images using OCR.
         4. Review and edit extracted text if necessary.
-        5. Download the compiled catalog as an Excel file.
+        5. Move to the next image and repeat.
+        6. Download the compiled catalog as an Excel file.
         """
     )
 
@@ -32,19 +35,24 @@ office = st.selectbox("Select Your Office", ["Manchester", "Esher", "Birmingham"
 uploaded_files = st.file_uploader("Choose images", type=["png", "jpg", "jpeg"], accept_multiple_files=True)
 
 if uploaded_files:
-    for file in uploaded_files:
+    total_images = len(uploaded_files)
+    current_index = st.session_state.current_image_index
+    
+    if current_index < total_images:
+        file = uploaded_files[current_index]
         image = Image.open(file)
         
         # Enhance image for better OCR accuracy
+        image = image.convert('L')  # Convert to grayscale
+        image = image.filter(ImageFilter.SHARPEN)  # Apply sharpening filter
         enhancer = ImageEnhance.Contrast(image)
         enhanced_image = enhancer.enhance(2)  # Increase contrast
-        final_image = enhanced_image.convert('L')  # Convert to grayscale
         
         # Display processed image
         st.image(enhanced_image, caption=f"Processed Image - {file.name}", width=200)
         
         # Perform OCR on the enhanced image
-        extracted_text = pytesseract.image_to_string(final_image, config='--psm 6')
+        extracted_text = pytesseract.image_to_string(enhanced_image, config='--psm 6')
         
         st.subheader("OCR Extracted Text")
         st.text(extracted_text)
@@ -62,10 +70,14 @@ if uploaded_files:
             edition = st.selectbox("Select the Edition", edition_options, index=0, key=f"edition_{file.name}")
             author = st.selectbox("Select the Author", lines, index=len(lines)-1, key=f"author_{file.name}")
             
-            if st.button(f"Add Book Data {file.name}"):
+            if st.button("Add Book Data"):
                 new_entry = {"Image": file.name, "Title": title, "Edition": edition, "Author": author}
                 st.session_state.book_data.append(new_entry)
                 st.success(f"Book data for {file.name} added to the table!")
+                
+                # Move to next image
+                st.session_state.current_image_index += 1
+                st.experimental_rerun()
 
 # Display the editable table if there is any data
 if st.session_state.book_data:
