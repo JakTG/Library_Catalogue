@@ -3,7 +3,6 @@ from PIL import Image, ImageEnhance, ImageFilter, ImageOps
 import pytesseract
 import pandas as pd
 import io
-import cv2
 import numpy as np
 
 # Initialize session state to hold book data
@@ -37,23 +36,14 @@ def preprocess_image(image):
     # Convert to grayscale
     image = image.convert('L')
     
-    # Convert to OpenCV format
-    img_array = np.array(image)
-    
-    # Apply adaptive thresholding
-    img_array = cv2.adaptiveThreshold(img_array, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 11, 2)
-    
-    # Convert back to PIL Image
-    processed_image = Image.fromarray(img_array)
-    
     # Enhance contrast
-    enhancer = ImageEnhance.Contrast(processed_image)
-    processed_image = enhancer.enhance(3)
+    enhancer = ImageEnhance.Contrast(image)
+    image = enhancer.enhance(3)
     
     # Sharpen image
-    processed_image = processed_image.filter(ImageFilter.SHARPEN)
+    image = image.filter(ImageFilter.SHARPEN)
     
-    return processed_image
+    return image
 
 if uploaded_files:
     for file in uploaded_files:
