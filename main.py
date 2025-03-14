@@ -1,8 +1,10 @@
 import streamlit as st
-from PIL import Image, ImageEnhance, ImageFilter
+from PIL import Image, ImageEnhance, ImageFilter, ImageOps
 import pytesseract
 import pandas as pd
 import io
+import cv2
+import numpy as np
 
 # Initialize session state to hold book data
 if 'book_data' not in st.session_state:
@@ -31,18 +33,38 @@ office = st.selectbox("Select Your Office", ["Manchester", "Esher", "Birmingham"
 # Image uploader (accepts up to 50 files)
 uploaded_files = st.file_uploader("Choose up to 50 images", type=["png", "jpg", "jpeg"], accept_multiple_files=True)
 
+def preprocess_image(image):
+    # Convert to grayscale
+    image = image.convert('L')
+    
+    # Convert to OpenCV format
+    img_array = np.array(image)
+    
+    # Apply adaptive thresholding
+    img_array = cv2.adaptiveThreshold(img_array, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 11, 2)
+    
+    # Convert back to PIL Image
+    processed_image = Image.fromarray(img_array)
+    
+    # Enhance contrast
+    enhancer = ImageEnhance.Contrast(processed_image)
+    processed_image = enhancer.enhance(3)
+    
+    # Sharpen image
+    processed_image = processed_image.filter(ImageFilter.SHARPEN)
+    
+    return processed_image
+
 if uploaded_files:
     for file in uploaded_files:
         image = Image.open(file)
         
-        # Enhance image for better OCR accuracy
-        image = image.convert('L')  # Convert to grayscale
-        image = image.filter(ImageFilter.SHARPEN)  # Apply sharpening filter
-        enhancer = ImageEnhance.Contrast(image)
-        enhanced_image = enhancer.enhance(2)  # Increase contrast
+        # Process image
+        image = preprocess_image(image)
         
-        # Perform OCR on the enhanced image
-        extracted_text = pytesseract.image_to_string(enhanced_image, config='--psm 6')
+        # Perform OCR with optimized settings
+        custom_config = "--psm 6 --oem 3"
+        extracted_text = pytesseract.image_to_string(image, config=custom_config)
         
         # Extract non-empty lines
         lines = [line.strip() for line in extracted_text.splitlines() if line.strip()]
