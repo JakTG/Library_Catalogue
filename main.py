@@ -4,7 +4,6 @@ import pytesseract
 import pandas as pd
 import io
 import numpy as np
-import time
 
 # Initialize session state to hold book data
 if 'book_data' not in st.session_state:
@@ -44,12 +43,10 @@ def preprocess_image(image):
     # Convert to grayscale
     image = image.convert('L')
     
-    # Apply adaptive thresholding (binarization)
+    # Enhance contrast and apply sharpening
     image = ImageOps.autocontrast(image)
     enhancer = ImageEnhance.Contrast(image)
     image = enhancer.enhance(2)
-    
-    # Sharpen image
     image = image.filter(ImageFilter.SHARPEN)
     
     return image
@@ -64,8 +61,7 @@ if uploaded_files:
         image = Image.open(file)
         
         # Process image
-        image_resized = image.resize((image.width // 2, image.height // 2))  # Reduce size to speed up processing
-        image_preprocessed = preprocess_image(image_resized)
+        image_preprocessed = preprocess_image(image)
         
         # Perform OCR with optimized settings
         custom_config = "--psm 4 --oem 3"
@@ -79,14 +75,8 @@ if uploaded_files:
         edition = lines[1] if len(lines) > 1 else "N/A"
         author = lines[2] if len(lines) > 2 else "Unknown"
         
-        # Convert image to byte format for embedding in DataFrame
-        img_byte_arr = io.BytesIO()
-        image.thumbnail((100, 100))  # Reduce image size for catalog display
-        image.save(img_byte_arr, format='PNG')
-        img_byte_arr = img_byte_arr.getvalue()
-        
         # Append to session state book data
-        new_entry = {"Image": img_byte_arr, "Title": title, "Edition": edition, "Author": author}
+        new_entry = {"Image": file, "Title": title, "Edition": edition, "Author": author}
         st.session_state.book_data.append(new_entry)
     
     st.success("All images processed and added to the catalog!")
@@ -97,12 +87,8 @@ if st.session_state.book_data:
     df_books = pd.DataFrame(st.session_state.book_data).drop_duplicates()
     st.session_state.book_data = df_books.to_dict("records")  # Ensure no duplicates persist
     
-    # Convert images to displayable format
-    def display_image(data):
-        return f'<img src="data:image/png;base64,{data.encode("base64").decode()}" width="50">'
-    
-    df_books["Image"] = df_books["Image"].apply(display_image)
-    st.markdown(df_books.to_html(escape=False), unsafe_allow_html=True)
+    # Display images and catalog data
+    st.write(df_books)
     
     # Create Excel file and provide download button
     output = io.BytesIO()
