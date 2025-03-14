@@ -12,7 +12,7 @@ if 'book_data' not in st.session_state:
 # Title and description
 st.image("https://www.workspace-interiors.co.uk/application/files/thumbnails/xs/3416/1530/8285/tony_gee_large_logo_no_background.png", width=250)
 st.title("Book OCR Extraction with Editable Catalogue")
-st.write("Automated app to extract information from images using OCR, allowing users to compile everything into a catalogued library and download it as a CSV file.")
+st.write("Automated app to extract information from images using OCR, allowing users to compile everything into a catalogued library and download it as an Excel file.")
 
 # How the app works expander
 with st.expander("How to use the app"):
@@ -22,7 +22,7 @@ with st.expander("How to use the app"):
         2. Select the office location.
         3. The app extracts text from images using OCR.
         4. The extracted information is automatically catalogued.
-        5. Download the compiled catalog as a CSV file.
+        5. Download the compiled catalog as an Excel (.xlsx) file.
         """
     )
 
@@ -91,9 +91,10 @@ if st.session_state.book_data:
     st.dataframe(df_books)
 
 # Process & Download Catalogue Button
-if st.session_state.book_data and st.button("Download Catalogue as CSV"):
+if st.session_state.book_data and st.button("Download Catalogue as Excel"):
     output = io.BytesIO()
-    df_books.to_csv(output, index=False)
+    with pd.ExcelWriter(output, engine='openpyxl') as writer:
+        df_books.to_excel(writer, index=False, sheet_name='Catalogue')
     output.seek(0)
-    file_name = f"{office}_automated_catalogue.csv"
-    st.download_button("Download Catalogue", output, file_name, "text/csv")
+    file_name = f"{office}_automated_catalogue.xlsx"
+    st.download_button("Download Catalogue", output, file_name, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
