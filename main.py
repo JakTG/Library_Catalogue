@@ -58,7 +58,7 @@ if uploaded_files:
     processed_files = set()
     for file in uploaded_files:
         if file.name in processed_files:
-            continue  # Skip duplicate processing
+            continue  # Skip duplicate processing, this can be re-wrote so that it removes duplicate entries
         processed_files.add(file.name)
         
         image = Image.open(file)
