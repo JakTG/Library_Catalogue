@@ -74,6 +74,10 @@ if uploaded_files:
         title = lines[0] if len(lines) > 0 else "Unknown"
         edition = lines[1] if len(lines) > 1 else "N/A"
         author = lines[2] if len(lines) > 2 else "Unknown"
+
+        # Code to alert the user if they are unable to read the image that was inputted
+        # if edition == 'N/A' & title and author == 'Unknown:
+        
         
         # Append to session state book data
         new_entry = {"Image": file.name, "Title": title, "Edition": edition, "Author": author}
