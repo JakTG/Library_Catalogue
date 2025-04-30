@@ -18,7 +18,7 @@ st.write("Automated app to extract information from images using OCR, allowing u
 with st.expander("How to use the app"):
     st.write(
         """
-        1. Upload up to 50 images of book covers or barcodes.
+        1. Upload all images of your books
         2. Select the office location.
         3. The app extracts text from images using OCR.
         4. The extracted information is automatically catalogued.
@@ -30,7 +30,7 @@ with st.expander("How to use the app"):
 office = st.selectbox("Select Your Office", ["Manchester", "Esher", "Birmingham", "Stonehouse"])
 
 # Image uploader (accepts up to 50 files)
-uploaded_files = st.file_uploader("Choose up to 50 images", type=["png", "jpg", "jpeg"], accept_multiple_files=True)
+uploaded_files = st.file_uploader("Choose all your images", type=["png", "jpg", "jpeg"], accept_multiple_files=True)
 
 # Clear session state when new images are uploaded
 if uploaded_files:
