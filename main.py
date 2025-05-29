@@ -83,7 +83,7 @@ if uploaded_files:
         
         
         # Append to session state book data
-        new_entry = {"Image": file, "Title": title, "Edition": edition, "Author": author}
+        new_entry = {"Image": file.name, "Title": title, "Edition": edition, "Author": author}
         st.session_state.book_data.append(new_entry)
     
     st.success("All images processed and added to the catalog!")
