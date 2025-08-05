@@ -3,17 +3,20 @@ from PIL import Image, ImageEnhance, ImageFilter, ImageOps
 import pytesseract
 import pandas as pd
 import io
+import concurrent.futures
 
-# Initialize session state to hold book data
+# --- Session State Init ---
 if 'book_data' not in st.session_state:
     st.session_state.book_data = []
 
-# Title and description
+if 'processed_files' not in st.session_state:
+    st.session_state.processed_files = set()
+
+# --- UI Header ---
 st.image("https://www.workspace-interiors.co.uk/application/files/thumbnails/xs/3416/1530/8285/tony_gee_large_logo_no_background.png", width=250)
 st.title("Book OCR Extraction with Editable Catalogue")
 st.write("Automated app to extract information from images using OCR, allowing users to compile everything into a catalogued library and download it as an Excel file.")
 
-# How to use section
 with st.expander("How to use the app"):
     st.write(
         """
@@ -25,75 +28,91 @@ with st.expander("How to use the app"):
         """
     )
 
-# Office dropdown
+# --- Office Selection ---
 office = st.selectbox("Select Your Office", ["Manchester", "Esher", "Birmingham", "Stonehouse"])
 
-# Optional refresh button
+# --- Clear Button ---
 if st.button("🔄 Clear Catalogue"):
     st.session_state.book_data = []
+    st.session_state.processed_files = set()
 
-# Upload multiple images
+# --- Upload Images ---
 uploaded_files = st.file_uploader(
-    "Upload images of your books (10+ allowed)", 
-    type=["png", "jpg", "jpeg"], 
+    "Upload images of your books (10+ allowed)",
+    type=["png", "jpg", "jpeg"],
     accept_multiple_files=True
 )
 
-# Reset book data if new images are uploaded
 if uploaded_files:
     if 'last_uploaded_files' in st.session_state:
-        if set(file.name for file in uploaded_files) != set(st.session_state.last_uploaded_files):
+        current_uploads = set(file.name for file in uploaded_files)
+        if current_uploads != set(st.session_state.last_uploaded_files):
             st.session_state.book_data = []
+            st.session_state.processed_files = set()
     st.session_state.last_uploaded_files = [file.name for file in uploaded_files]
 
-# Image preprocessing
+# --- Image Preprocessing ---
 def preprocess_image(image):
-    image = image.convert('L')  # Grayscale
+    image = image.convert('L')
     image = ImageOps.autocontrast(image)
     enhancer = ImageEnhance.Contrast(image)
     image = enhancer.enhance(2)
     image = image.filter(ImageFilter.SHARPEN)
+
+    max_width = 1000
+    if image.width > max_width:
+        ratio = max_width / float(image.width)
+        new_height = int(float(image.height) * ratio)
+        image = image.resize((max_width, new_height), Image.ANTIALIAS)
+
     return image
 
-# Process images if uploaded
+# --- OCR Processing Function ---
+def extract_book_data(file):
+    if file.name in st.session_state.processed_files:
+        return None
+
+    image = Image.open(file)
+    processed_img = preprocess_image(image)
+
+    # Updated OCR config: --psm 6 = block of text
+    custom_config = "--psm 6 --oem 3"
+    text = pytesseract.image_to_string(processed_img, config=custom_config)
+
+    lines = [line.strip() for line in text.splitlines() if line.strip()]
+    title = lines[0] if len(lines) > 0 else "Unknown"
+    edition = lines[1] if len(lines) > 1 else "N/A"
+    author = lines[2] if len(lines) > 2 else "Unknown"
+
+    st.session_state.processed_files.add(file.name)
+
+    return {
+        "Image": file.name,
+        "Title": title,
+        "Edition": edition,
+        "Author": author
+    }
+
+# --- Process Images in Parallel ---
 if uploaded_files:
-    processed_files = set(entry["Image"] for entry in st.session_state.book_data)
+    with st.spinner("Processing images..."):
+        with concurrent.futures.ThreadPoolExecutor() as executor:
+            results = list(executor.map(extract_book_data, uploaded_files))
 
-    for file in uploaded_files:
-        if file.name in processed_files:
-            continue
-
-        image = Image.open(file)
-        image_preprocessed = preprocess_image(image)
-
-        # OCR config
-        custom_config = "--psm 4 --oem 3"
-        extracted_text = pytesseract.image_to_string(image_preprocessed, config=custom_config)
-
-        lines = [line.strip() for line in extracted_text.splitlines() if line.strip()]
-        title = lines[0] if len(lines) > 0 else "Unknown"
-        edition = lines[1] if len(lines) > 1 else "N/A"
-        author = lines[2] if len(lines) > 2 else "Unknown"
-
-        # Append to session state
-        st.session_state.book_data.append({
-            "Image": file.name,
-            "Title": title,
-            "Edition": edition,
-            "Author": author
-        })
+        new_entries = [entry for entry in results if entry]
+        st.session_state.book_data.extend(new_entries)
 
     st.success("Images processed and catalogued!")
 
-# Show editable catalog
+# --- Editable Table View ---
 if st.session_state.book_data:
-    st.subheader("📚 Editable Book Catalogue")
+    st.subheader("Editable Book Catalogue")
 
     df_books = pd.DataFrame(st.session_state.book_data).drop_duplicates()
     edited_df = st.data_editor(df_books, num_rows="dynamic", use_container_width=True)
     st.session_state.book_data = edited_df.to_dict("records")
 
-    # Excel export
+    # --- Excel Export ---
     output = io.BytesIO()
     with pd.ExcelWriter(output, engine='openpyxl') as writer:
         edited_df.to_excel(writer, index=False, sheet_name='Catalogue')
@@ -106,4 +125,3 @@ if st.session_state.book_data:
         file_name,
         "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     )
-
