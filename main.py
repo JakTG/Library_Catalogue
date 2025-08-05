@@ -31,7 +31,7 @@ with st.expander("How to use the app"):
 # --- Office Selection ---
 office = st.selectbox("Select Your Office", ["Manchester", "Esher", "Birmingham", "Stonehouse"])
 
-# --- Clear Button ---
+# --- Clear Button, may not need to be used as it only clears the set ---
 if st.button("🔄 Clear Catalogue"):
     st.session_state.book_data = []
     st.session_state.processed_files = set()
@@ -105,6 +105,7 @@ if uploaded_files:
     st.success("Images processed and catalogued!")
 
 # --- Editable Table View ---
+# Allows users to edit the table so if there is any spelling mistakes users can edit them before they get into the excel
 if st.session_state.book_data:
     st.subheader("Editable Book Catalogue")
 
@@ -120,8 +121,9 @@ if st.session_state.book_data:
 
     file_name = f"{office}_automated_catalogue.xlsx"
     st.download_button(
-        "📥 Download Catalogue",
+        "Download Catalogue",
         output,
         file_name,
         "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     )
+
