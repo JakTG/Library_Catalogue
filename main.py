@@ -1,3 +1,4 @@
+# Packages used for the code
 import streamlit as st
 from PIL import Image, ImageEnhance, ImageFilter, ImageOps
 import pytesseract
@@ -17,10 +18,12 @@ st.image("https://www.workspace-interiors.co.uk/application/files/thumbnails/xs/
 st.title("Book OCR Extraction with Editable Catalogue")
 st.write("Automated app to extract information from images using OCR, allowing users to compile everything into a catalogued library and download it as an Excel file.")
 
+
+# Expander used to show how users can use the app
 with st.expander("How to use the app"):
     st.write(
         """
-        1. Upload 10+ images of your books.
+        1. Upload multiple images of your books.
         2. Select your office location.
         3. The app extracts text using OCR.
         4. You can edit the extracted data directly in the spreadsheet view.
@@ -31,14 +34,15 @@ with st.expander("How to use the app"):
 # --- Office Selection ---
 office = st.selectbox("Select Your Office", ["Manchester", "Esher", "Birmingham", "Stonehouse"])
 
-# --- Clear Button, may not need to be used as it only clears the set ---
+# --- Clear Button---
+# instead of having to manually remove the photos, you can now
 if st.button("🔄 Clear Catalogue"):
     st.session_state.book_data = []
     st.session_state.processed_files = set()
 
 # --- Upload Images ---
 uploaded_files = st.file_uploader(
-    "Upload images of your books (10+ allowed)",
+    "Upload images of all your books",
     type=["png", "jpg", "jpeg"],
     accept_multiple_files=True
 )
@@ -109,16 +113,19 @@ if uploaded_files:
 if st.session_state.book_data:
     st.subheader("Editable Book Catalogue")
 
+    # Any duplicates will be dropped from the dataframe
     df_books = pd.DataFrame(st.session_state.book_data).drop_duplicates()
     edited_df = st.data_editor(df_books, num_rows="dynamic", use_container_width=True)
     st.session_state.book_data = edited_df.to_dict("records")
 
     # --- Excel Export ---
+    # Allow users to download the dataframe to an excel spreadsheet
     output = io.BytesIO()
     with pd.ExcelWriter(output, engine='openpyxl') as writer:
         edited_df.to_excel(writer, index=False, sheet_name='Catalogue')
     output.seek(0)
 
+    # File name for the excel sheet
     file_name = f"{office}_automated_catalogue.xlsx"
     st.download_button(
         "Download Catalogue",
@@ -126,4 +133,5 @@ if st.session_state.book_data:
         file_name,
         "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     )
+
 
