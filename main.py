@@ -8,10 +8,6 @@ import io
 if 'book_data' not in st.session_state:
     st.session_state.book_data = []
 
-# Optional refresh button
-if st.button("🔄 Clear Catalogue"):
-    st.session_state.book_data = []
-
 # Title and description
 st.image("https://www.workspace-interiors.co.uk/application/files/thumbnails/xs/3416/1530/8285/tony_gee_large_logo_no_background.png", width=250)
 st.title("Book OCR Extraction with Editable Catalogue")
@@ -31,6 +27,10 @@ with st.expander("How to use the app"):
 
 # Office dropdown
 office = st.selectbox("Select Your Office", ["Manchester", "Esher", "Birmingham", "Stonehouse"])
+
+# Optional refresh button
+if st.button("🔄 Clear Catalogue"):
+    st.session_state.book_data = []
 
 # Upload multiple images
 uploaded_files = st.file_uploader(
@@ -106,3 +106,4 @@ if st.session_state.book_data:
         file_name,
         "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     )
+
