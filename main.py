@@ -26,7 +26,7 @@ with st.expander("How to use the app"):
         1. Upload multiple images of your books.
         2. Select your office location.
         3. The app extracts text using OCR.
-        4. You can edit the extracted data directly in the spreadsheet view.
+        4. Editable table in the window view before exporting to excel file.
         5. Click 'Download Catalogue' to save it as an Excel file.
         """
     )
@@ -132,6 +132,7 @@ if st.session_state.book_data:
         file_name,
         "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     )
+
 
 
 
