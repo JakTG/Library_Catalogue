@@ -1,6 +1,7 @@
 # Packages used for the code
 import streamlit as st
 from PIL import Image, ImageEnhance, ImageFilter, ImageOps
+import time
 import pytesseract
 import pandas as pd
 import io
@@ -64,6 +65,7 @@ def preprocess_image(image):
     image = enhancer.enhance(2)
     image = image.filter(ImageFilter.SHARPEN)
 
+    # Max width of a image that when added what it will go to
     max_width = 1000
     if image.width > max_width:
         ratio = max_width / float(image.width)
@@ -132,6 +134,7 @@ if st.session_state.book_data:
         file_name,
         "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     )
+
 
 
 
