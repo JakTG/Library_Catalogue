@@ -35,7 +35,6 @@ with st.expander("How to use the app"):
 office = st.selectbox("Select Your Office", ["Manchester", "Esher", "Birmingham", "Stonehouse"])
 
 # --- Clear Button---
-# instead of having to manually remove the photos, you can now
 if st.button("🔄 Clear Catalogue"):
     st.session_state.book_data = []
     st.session_state.processed_files = set()
@@ -47,6 +46,8 @@ uploaded_files = st.file_uploader(
     accept_multiple_files=True
 )
 
+
+# Uploading of files and being put into an Array
 if uploaded_files:
     if 'last_uploaded_files' in st.session_state:
         current_uploads = set(file.name for file in uploaded_files)
@@ -109,7 +110,6 @@ if uploaded_files:
     st.success("Images processed and catalogued!")
 
 # --- Editable Table View ---
-# Allows users to edit the table so if there is any spelling mistakes users can edit them before they get into the excel
 if st.session_state.book_data:
     st.subheader("Editable Book Catalogue")
 
@@ -119,13 +119,12 @@ if st.session_state.book_data:
     st.session_state.book_data = edited_df.to_dict("records")
 
     # --- Excel Export ---
-    # Allow users to download the dataframe to an excel spreadsheet
     output = io.BytesIO()
     with pd.ExcelWriter(output, engine='openpyxl') as writer:
         edited_df.to_excel(writer, index=False, sheet_name='Catalogue')
     output.seek(0)
 
-    # File name for the excel sheet
+    # File name for the excel sheet when exporting the table
     file_name = f"{office}_automated_catalogue.xlsx"
     st.download_button(
         "Download Catalogue",
@@ -133,5 +132,6 @@ if st.session_state.book_data:
         file_name,
         "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     )
+
 
 
