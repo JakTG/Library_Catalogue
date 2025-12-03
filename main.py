@@ -59,23 +59,18 @@ if uploaded_files:
     st.session_state.last_uploaded_files = [f.name for f in uploaded_files]
 
 
-# --- Improved OCR Preprocessing (no cv2) ---
-def preprocess_image(img: Image.Image) -> Image.Image:
-    # Grayscale
+# ---------- OCR HELPERS (no cropping) ----------
+
+def basic_preprocess(img: Image.Image) -> Image.Image:
+    """Generic cleanup: grayscale, contrast, sharpen, light denoise."""
     img = img.convert("L")
-
-    # Auto-contrast to stretch text contrast
     img = ImageOps.autocontrast(img)
-
-    # Gentle contrast & sharpness (too strong can hurt)
-    img = ImageEnhance.Contrast(img).enhance(1.8)
-    img = ImageEnhance.Sharpness(img).enhance(1.5)
-
-    # Light denoise
+    img = ImageEnhance.Contrast(img).enhance(2.0)
+    img = ImageEnhance.Sharpness(img).enhance(1.8)
     img = img.filter(ImageFilter.MedianFilter(size=3))
 
-    # Upscale if relatively small (helps OCR)
-    target_width = 1000
+    # Upscale only if relatively small
+    target_width = 900
     if img.width < target_width:
         scale = target_width / float(img.width)
         img = img.resize(
@@ -86,20 +81,44 @@ def preprocess_image(img: Image.Image) -> Image.Image:
     return img
 
 
-# --- OCR Extraction: produce Line 1, Line 2, Line 3, ... ---
+def choose_best_orientation(img: Image.Image) -> Image.Image:
+    """Try 0/90/180/270 degrees and pick the orientation with most alphanumeric OCR chars."""
+    best_img = img
+    best_score = -1
+
+    for angle in [0, 90, 180, 270]:
+        rotated = img.rotate(angle, expand=True)
+        processed = basic_preprocess(rotated)
+
+        # Light-weight OCR just to score
+        text = pytesseract.image_to_string(processed, config="--oem 3 --psm 6")
+        score = sum(ch.isalnum() for ch in text)
+
+        if score > best_score:
+            best_score = score
+            best_img = rotated
+
+    return best_img
+
+
 def extract_lines_for_file(file):
+    """Full OCR pipeline: orientation → preprocess → text → lines."""
     img = Image.open(file)
-    processed = preprocess_image(img)
 
-    # OCR config tuned for block of text
+    # 1) Find best orientation
+    oriented = choose_best_orientation(img)
+
+    # 2) Final preprocess on the chosen orientation
+    processed = basic_preprocess(oriented)
+
+    # 3) OCR with config tuned for block of text
     config = "--oem 3 --psm 6 -c preserve_interword_spaces=1"
-
     raw_text = pytesseract.image_to_string(processed, config=config)
 
-    # Split into clean, non-empty lines
+    # 4) Split into clean, non-empty lines
     lines = [line.strip() for line in raw_text.splitlines() if line.strip()]
 
-    # Build row dict: Image, Line 1, Line 2, ...
+    # 5) Build row dict: Image, Line 1, Line 2, ...
     row = {"Image": file.name}
     for i, line in enumerate(lines):
         row[f"Line {i+1}"] = line
@@ -122,7 +141,6 @@ if uploaded_files:
 if st.session_state.book_data:
     st.subheader("Editable Book Catalogue")
 
-    # DataFrame will have columns: Image, Line 1, Line 2, ...
     df_books = pd.DataFrame(st.session_state.book_data).drop_duplicates()
     edited_df = st.data_editor(df_books, num_rows="dynamic", use_container_width=True)
     st.session_state.book_data = edited_df.to_dict("records")
