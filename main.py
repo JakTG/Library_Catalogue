@@ -1,17 +1,15 @@
 import streamlit as st
-from PIL import Image, ImageEnhance, ImageFilter, ImageOps
+from PIL import Image, ImageEnhance, ImageFilter
 import pytesseract
 import pandas as pd
 import io
-import numpy as np
-import cv2
 
-# Init session state
-if "ocr_results" not in st.session_state:
-    st.session_state.ocr_results = []
+# --- Session State Init ---
+if "ocr_data" not in st.session_state:
+    st.session_state.ocr_data = []
 
-st.title("OCR Accuracy Tester")
-st.write("Upload ANY image and this tool will extract ALL readable text clearly.")
+st.title("OCR Line-by-Line Accuracy Tester")
+st.write("Upload an image. The app extracts ALL text and splits it into clean lines.")
 
 uploaded_files = st.file_uploader(
     "Upload test images",
@@ -20,66 +18,72 @@ uploaded_files = st.file_uploader(
 )
 
 # -------------------------
-# BETTER OCR PREPROCESSING
+# BETTER OCR PREPROCESSING (no cv2 needed)
 # -------------------------
-def preprocess(image):
-    # Convert to OpenCV
-    img = np.array(image)
-    img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+def preprocess_image(img):
+    # Convert to grayscale
+    img = img.convert("L")
 
-    # Adaptive thresholding (WAY better)
-    img = cv2.adaptiveThreshold(
-        img, 255,
-        cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
-        cv2.THRESH_BINARY,
-        31, 10
-    )
+    # Increase contrast
+    img = ImageEnhance.Contrast(img).enhance(2.5)
 
-    # Denoise
-    img = cv2.fastNlMeansDenoising(img, h=15)
+    # Sharpen image
+    img = ImageEnhance.Sharpness(img).enhance(2.0)
 
-    # Resize (improves OCR massively)
-    img = cv2.resize(img, None, fx=2, fy=2, interpolation=cv2.INTER_CUBIC)
+    # Slight noise reduction
+    img = img.filter(ImageFilter.MedianFilter(size=3))
+
+    # Upscale for better OCR
+    w, h = img.size
+    img = img.resize((w * 2, h * 2))
 
     return img
 
 # -------------------------
-# PROCESS EACH IMAGE
+# RUN OCR
 # -------------------------
 if uploaded_files:
-    st.session_state.ocr_results = []  # reset
+    st.session_state.ocr_data = []  # Reset
 
     for file in uploaded_files:
-        image = Image.open(file)
-        processed = preprocess(image)
+        img = Image.open(file)
+        processed = preprocess_image(img)
 
-        # OCR config
+        # OCR configuration
         config = "--oem 3 --psm 6"
 
         text = pytesseract.image_to_string(processed, config=config)
 
-        st.session_state.ocr_results.append({
-            "Image": file.name,
-            "Extracted Text": text.strip()
-        })
+        # Split into clean lines
+        lines = [line.strip() for line in text.split("\n") if line.strip()]
 
-    st.success("Images processed!")
+        # Create row dictionary
+        row = {"Image": file.name}
+
+        # Add each line into its own column
+        for i, line in enumerate(lines):
+            row[f"Line {i+1}"] = line
+
+        st.session_state.ocr_data.append(row)
+
+    st.success("OCR Completed!")
 
 # -------------------------
 # DISPLAY RESULTS
 # -------------------------
-if st.session_state.ocr_results:
-    df = pd.DataFrame(st.session_state.ocr_results)
+if st.session_state.ocr_data:
+    df = pd.DataFrame(st.session_state.ocr_data)
     st.data_editor(df, use_container_width=True)
 
+    # Excel export
     output = io.BytesIO()
     with pd.ExcelWriter(output, engine="openpyxl") as writer:
-        df.to_excel(writer, index=False, sheet_name="OCR Results")
+        df.to_excel(writer, index=False, sheet_name="OCR Lines")
     output.seek(0)
 
     st.download_button(
-        "Download OCR Results",
+        "Download OCR Lines Excel",
         output,
-        "ocr_results.xlsx",
+        "ocr_lines.xlsx",
         "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     )
