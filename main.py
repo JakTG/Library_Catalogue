@@ -15,9 +15,15 @@ if 'processed_files' not in st.session_state:
     st.session_state.processed_files = set()
 
 # --- UI Header ---
-st.image("https://www.workspace-interiors.co.uk/application/files/thumbnails/xs/3416/1530/8285/tony_gee_large_logo_no_background.png", width=250)
+st.image(
+    "https://www.workspace-interiors.co.uk/application/files/thumbnails/xs/3416/1530/8285/tony_gee_large_logo_no_background.png",
+    width=250,
+)
 st.title("Book OCR Extraction with Editable Catalogue")
-st.write("Automated app to extract information from images using OCR, allowing users to compile everything into a catalogued library and download it as an Excel file.")
+st.write(
+    "Automated app to extract information from images using OCR, allowing users to compile everything into a "
+    "catalogued library and download it as an Excel file."
+)
 
 # Expander used to show how users can use the app
 with st.expander("How to use the app"):
@@ -43,12 +49,12 @@ if st.button("🔄 Clear Catalogue"):
 uploaded_files = st.file_uploader(
     "Upload images of all your books",
     type=["png", "jpg", "jpeg"],
-    accept_multiple_files=True
+    accept_multiple_files=True,
 )
 
 # Uploading of files and being put into an Array
 if uploaded_files:
-    if 'last_uploaded_files' in st.session_state:
+    if "last_uploaded_files" in st.session_state:
         current_uploads = set(file.name for file in uploaded_files)
         if current_uploads != set(st.session_state.last_uploaded_files):
             st.session_state.book_data = []
@@ -57,7 +63,7 @@ if uploaded_files:
 
 # --- Image Preprocessing ---
 def preprocess_image(image):
-    image = image.convert('L')
+    image = image.convert("L")
     image = ImageOps.autocontrast(image)
     enhancer = ImageEnhance.Contrast(image)
     image = enhancer.enhance(2)
@@ -73,7 +79,7 @@ def preprocess_image(image):
     return image
 
 # --- OCR Processing Function ---
-# NOTE: no use of st.session_state in this function anymore
+# IMPORTANT: no st.session_state access in this function
 def extract_book_data(file):
     image = Image.open(file)
     processed_img = preprocess_image(image)
@@ -91,12 +97,12 @@ def extract_book_data(file):
         "Image": file.name,
         "Title": title,
         "Edition": edition,
-        "Author": author
+        "Author": author,
     }
 
 # --- Process Images in Parallel ---
 if uploaded_files:
-    # Only process files we haven't seen before
+    # Filter out files that were already processed (use session_state here, in main thread)
     files_to_process = [
         f for f in uploaded_files
         if f.name not in st.session_state.processed_files
@@ -110,7 +116,7 @@ if uploaded_files:
             new_entries = [entry for entry in results if entry]
             st.session_state.book_data.extend(new_entries)
 
-            # Update processed_files **after** threading
+            # Mark files as processed AFTER threading is done
             st.session_state.processed_files.update(f.name for f in files_to_process)
 
         st.success("Images processed and catalogued!")
@@ -128,8 +134,8 @@ if st.session_state.book_data:
 
     # --- Excel Export ---
     output = io.BytesIO()
-    with pd.ExcelWriter(output, engine='openpyxl') as writer:
-        edited_df.to_excel(writer, index=False, sheet_name='Catalogue')
+    with pd.ExcelWriter(output, engine="openpyxl") as writer:
+        edited_df.to_excel(writer, index=False, sheet_name="Catalogue")
     output.seek(0)
 
     # File name for the excel sheet when exporting the table
@@ -138,5 +144,5 @@ if st.session_state.book_data:
         "Download Catalogue",
         output,
         file_name,
-        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     )
