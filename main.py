@@ -1,15 +1,15 @@
 # Packages used for the code
 import streamlit as st
-from PIL import Image, ImageEnhance, ImageFilter
+from PIL import Image, ImageEnhance, ImageFilter, ImageOps
 import pytesseract
 import pandas as pd
 import io
 
 # --- Session State Init ---
-if 'book_data' not in st.session_state:
+if "book_data" not in st.session_state:
     st.session_state.book_data = []
 
-if 'processed_files' not in st.session_state:
+if "processed_files" not in st.session_state:
     st.session_state.processed_files = set()
 
 # --- UI Header ---
@@ -46,10 +46,10 @@ if st.button("🔄 Clear Catalogue"):
 uploaded_files = st.file_uploader(
     "Upload images of all your books",
     type=["png", "jpg", "jpeg"],
-    accept_multiple_files=True
+    accept_multiple_files=True,
 )
 
-# Reset if new upload set
+# Reset if a different set of files is uploaded
 if uploaded_files:
     if "last_uploaded_files" in st.session_state:
         current_uploads = set(f.name for f in uploaded_files)
@@ -58,47 +58,62 @@ if uploaded_files:
             st.session_state.processed_files = set()
     st.session_state.last_uploaded_files = [f.name for f in uploaded_files]
 
-# --- Improved OCR Preprocessing ---
-def preprocess_image(img):
+
+# --- Improved OCR Preprocessing (no cv2) ---
+def preprocess_image(img: Image.Image) -> Image.Image:
+    # Grayscale
     img = img.convert("L")
-    img = ImageEnhance.Contrast(img).enhance(2.5)
-    img = ImageEnhance.Sharpness(img).enhance(2.0)
+
+    # Auto-contrast to stretch text contrast
+    img = ImageOps.autocontrast(img)
+
+    # Gentle contrast & sharpness (too strong can hurt)
+    img = ImageEnhance.Contrast(img).enhance(1.8)
+    img = ImageEnhance.Sharpness(img).enhance(1.5)
+
+    # Light denoise
     img = img.filter(ImageFilter.MedianFilter(size=3))
 
-    w, h = img.size
-    img = img.resize((w * 2, h * 2))
+    # Upscale if relatively small (helps OCR)
+    target_width = 1000
+    if img.width < target_width:
+        scale = target_width / float(img.width)
+        img = img.resize(
+            (int(img.width * scale), int(img.height * scale)),
+            Image.LANCZOS,
+        )
 
     return img
 
-# --- OCR Extraction Function ---
-def extract_book_data(file):
+
+# --- OCR Extraction: produce Line 1, Line 2, Line 3, ... ---
+def extract_lines_for_file(file):
     img = Image.open(file)
     processed = preprocess_image(img)
 
-    config = "--oem 3 --psm 6"
-    text = pytesseract.image_to_string(processed, config=config)
+    # OCR config tuned for block of text
+    config = "--oem 3 --psm 6 -c preserve_interword_spaces=1"
 
-    # Split into lines
-    lines = [line.strip() for line in text.splitlines() if line.strip()]
+    raw_text = pytesseract.image_to_string(processed, config=config)
 
-    title = lines[0] if len(lines) > 0 else "Unknown"
-    author = lines[1] if len(lines) > 1 else "Unknown"
-    edition = lines[2] if len(lines) > 2 else "N/A"
+    # Split into clean, non-empty lines
+    lines = [line.strip() for line in raw_text.splitlines() if line.strip()]
 
-    return {
-        "Image": file.name,
-        "Title": title,
-        "Author": author,
-        "Edition": edition
-    }
+    # Build row dict: Image, Line 1, Line 2, ...
+    row = {"Image": file.name}
+    for i, line in enumerate(lines):
+        row[f"Line {i+1}"] = line
+
+    return row
+
 
 # --- Process Images ---
 if uploaded_files:
     for file in uploaded_files:
         if file.name not in st.session_state.processed_files:
             with st.spinner(f"Processing {file.name}..."):
-                result = extract_book_data(file)
-                st.session_state.book_data.append(result)
+                row = extract_lines_for_file(file)
+                st.session_state.book_data.append(row)
                 st.session_state.processed_files.add(file.name)
 
     st.success("All images processed!")
@@ -107,10 +122,12 @@ if uploaded_files:
 if st.session_state.book_data:
     st.subheader("Editable Book Catalogue")
 
+    # DataFrame will have columns: Image, Line 1, Line 2, ...
     df_books = pd.DataFrame(st.session_state.book_data).drop_duplicates()
     edited_df = st.data_editor(df_books, num_rows="dynamic", use_container_width=True)
     st.session_state.book_data = edited_df.to_dict("records")
 
+    # --- Excel Export ---
     output = io.BytesIO()
     with pd.ExcelWriter(output, engine="openpyxl") as writer:
         edited_df.to_excel(writer, index=False, sheet_name="Catalogue")
@@ -121,5 +138,5 @@ if st.session_state.book_data:
         "Download Catalogue",
         output,
         file_name,
-        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     )
