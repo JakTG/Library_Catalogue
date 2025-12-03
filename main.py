@@ -95,7 +95,7 @@ if uploaded_files:
                 st.session_state.book_data.append(row)
                 st.session_state.processed_files.add(file.name)
 
-    st.success("All images processed (demo values filled in)!")
+    st.success("All images processed!")
 
 # --- Editable Table ---
 if st.session_state.book_data:
@@ -147,4 +147,5 @@ if st.session_state.book_data:
         file_name,
         "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     )
+
 
