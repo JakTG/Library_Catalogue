@@ -28,7 +28,7 @@ st.image(
 )
 st.title("Book OCR Extraction with Editable Catalogue")
 st.write(
-    "Automated app to extract information from images "
+    "Automated app to extract information from images (demo currently using fixed values) "
     "and compile everything into a catalogued library that can be downloaded as an Excel file."
 )
 
@@ -117,6 +117,9 @@ if st.session_state.book_data:
         wb = writer.book
         ws = wb["Catalogue"]
 
+        # Make the Image column reasonably wide (Excel width units)
+        ws.column_dimensions["A"].width = 18  # tweak this if you want wider/narrower
+
         # Add images into column A (Image column)
         # Header row is 1, data starts at row 2
         for row_idx, record in enumerate(st.session_state.book_data, start=2):
@@ -129,7 +132,8 @@ if st.session_state.book_data:
 
             # Load, thumbnail, then save to an in-memory PNG buffer
             pil_img = Image.open(io.BytesIO(img_bytes))
-            pil_img.thumbnail((120, 120))
+            pil_img.thumbnail((120, 120))  # pixel size of thumbnail
+
             img_buf = io.BytesIO()
             pil_img.save(img_buf, format="PNG")
             img_buf.seek(0)
@@ -137,6 +141,11 @@ if st.session_state.book_data:
             xl_img = XLImage(img_buf)
             xl_img.anchor = f"A{row_idx}"  # place image in Image column for this row
             ws.add_image(xl_img)
+
+            # Adjust row height to roughly match the image height
+            # Excel row height uses "points", ~0.75 * pixel height is a decent mapping
+            img_height_pixels = pil_img.size[1]
+            ws.row_dimensions[row_idx].height = img_height_pixels * 0.75
 
     output.seek(0)
 
@@ -147,5 +156,3 @@ if st.session_state.book_data:
         file_name,
         "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     )
-
-
