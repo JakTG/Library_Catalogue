@@ -1,3 +1,4 @@
+# Packages used for the code
 import streamlit as st
 from PIL import Image, ImageEnhance, ImageFilter
 import pytesseract
@@ -5,85 +6,120 @@ import pandas as pd
 import io
 
 # --- Session State Init ---
-if "ocr_data" not in st.session_state:
-    st.session_state.ocr_data = []
+if 'book_data' not in st.session_state:
+    st.session_state.book_data = []
 
-st.title("OCR Line-by-Line Accuracy Tester")
-st.write("Upload an image. The app extracts ALL text and splits it into clean lines.")
+if 'processed_files' not in st.session_state:
+    st.session_state.processed_files = set()
 
+# --- UI Header ---
+st.image(
+    "https://www.workspace-interiors.co.uk/application/files/thumbnails/xs/3416/1530/8285/tony_gee_large_logo_no_background.png",
+    width=250,
+)
+st.title("Book OCR Extraction with Editable Catalogue")
+st.write(
+    "Automated app to extract information from images using OCR, allowing users to compile everything into a "
+    "catalogued library and download it as an Excel file."
+)
+
+with st.expander("How to use the app"):
+    st.write(
+        """
+        1. Upload multiple images of your books.
+        2. Select your office location.
+        3. The app extracts text using OCR.
+        4. Editable table appears before export.
+        5. Click 'Download Catalogue' to save it.
+        """
+    )
+
+# --- Office Selection ---
+office = st.selectbox("Select Your Office", ["Manchester", "Esher", "Birmingham", "Stonehouse"])
+
+# --- Clear Button ---
+if st.button("🔄 Clear Catalogue"):
+    st.session_state.book_data = []
+    st.session_state.processed_files = set()
+
+# --- Upload Images ---
 uploaded_files = st.file_uploader(
-    "Upload test images",
+    "Upload images of all your books",
     type=["png", "jpg", "jpeg"],
     accept_multiple_files=True
 )
 
-# -------------------------
-# BETTER OCR PREPROCESSING (no cv2 needed)
-# -------------------------
+# Reset if new upload set
+if uploaded_files:
+    if "last_uploaded_files" in st.session_state:
+        current_uploads = set(f.name for f in uploaded_files)
+        if current_uploads != set(st.session_state.last_uploaded_files):
+            st.session_state.book_data = []
+            st.session_state.processed_files = set()
+    st.session_state.last_uploaded_files = [f.name for f in uploaded_files]
+
+# --- Improved OCR Preprocessing ---
 def preprocess_image(img):
-    # Convert to grayscale
     img = img.convert("L")
-
-    # Increase contrast
     img = ImageEnhance.Contrast(img).enhance(2.5)
-
-    # Sharpen image
     img = ImageEnhance.Sharpness(img).enhance(2.0)
-
-    # Slight noise reduction
     img = img.filter(ImageFilter.MedianFilter(size=3))
 
-    # Upscale for better OCR
     w, h = img.size
     img = img.resize((w * 2, h * 2))
 
     return img
 
-# -------------------------
-# RUN OCR
-# -------------------------
+# --- OCR Extraction Function ---
+def extract_book_data(file):
+    img = Image.open(file)
+    processed = preprocess_image(img)
+
+    config = "--oem 3 --psm 6"
+    text = pytesseract.image_to_string(processed, config=config)
+
+    # Split into lines
+    lines = [line.strip() for line in text.splitlines() if line.strip()]
+
+    title = lines[0] if len(lines) > 0 else "Unknown"
+    author = lines[1] if len(lines) > 1 else "Unknown"
+    edition = lines[2] if len(lines) > 2 else "N/A"
+
+    return {
+        "Image": file.name,
+        "Title": title,
+        "Author": author,
+        "Edition": edition
+    }
+
+# --- Process Images ---
 if uploaded_files:
-    st.session_state.ocr_data = []  # Reset
-
     for file in uploaded_files:
-        img = Image.open(file)
-        processed = preprocess_image(img)
+        if file.name not in st.session_state.processed_files:
+            with st.spinner(f"Processing {file.name}..."):
+                result = extract_book_data(file)
+                st.session_state.book_data.append(result)
+                st.session_state.processed_files.add(file.name)
 
-        # OCR configuration
-        config = "--oem 3 --psm 6"
+    st.success("All images processed!")
 
-        text = pytesseract.image_to_string(processed, config=config)
+# --- Editable Table ---
+if st.session_state.book_data:
+    st.subheader("Editable Book Catalogue")
 
-        # Split into clean lines
-        lines = [line.strip() for line in text.split("\n") if line.strip()]
+    df_books = pd.DataFrame(st.session_state.book_data).drop_duplicates()
+    edited_df = st.data_editor(df_books, num_rows="dynamic", use_container_width=True)
+    st.session_state.book_data = edited_df.to_dict("records")
 
-        # Create row dictionary
-        row = {"Image": file.name}
-
-        # Add each line into its own column
-        for i, line in enumerate(lines):
-            row[f"Line {i+1}"] = line
-
-        st.session_state.ocr_data.append(row)
-
-    st.success("OCR Completed!")
-
-# -------------------------
-# DISPLAY RESULTS
-# -------------------------
-if st.session_state.ocr_data:
-    df = pd.DataFrame(st.session_state.ocr_data)
-    st.data_editor(df, use_container_width=True)
-
-    # Excel export
     output = io.BytesIO()
     with pd.ExcelWriter(output, engine="openpyxl") as writer:
-        df.to_excel(writer, index=False, sheet_name="OCR Lines")
+        edited_df.to_excel(writer, index=False, sheet_name="Catalogue")
     output.seek(0)
 
+    file_name = f"{office}_automated_catalogue.xlsx"
     st.download_button(
-        "Download OCR Lines Excel",
+        "Download Catalogue",
         output,
-        "ocr_lines.xlsx",
+        file_name,
         "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     )
