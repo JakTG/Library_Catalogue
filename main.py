@@ -19,7 +19,6 @@ st.image("https://www.workspace-interiors.co.uk/application/files/thumbnails/xs/
 st.title("Book OCR Extraction with Editable Catalogue")
 st.write("Automated app to extract information from images using OCR, allowing users to compile everything into a catalogued library and download it as an Excel file.")
 
-
 # Expander used to show how users can use the app
 with st.expander("How to use the app"):
     st.write(
@@ -46,7 +45,6 @@ uploaded_files = st.file_uploader(
     type=["png", "jpg", "jpeg"],
     accept_multiple_files=True
 )
-
 
 # Uploading of files and being put into an Array
 if uploaded_files:
@@ -75,10 +73,8 @@ def preprocess_image(image):
     return image
 
 # --- OCR Processing Function ---
+# NOTE: no use of st.session_state in this function anymore
 def extract_book_data(file):
-    if file.name in st.session_state.processed_files:
-        return None
-
     image = Image.open(file)
     processed_img = preprocess_image(image)
 
@@ -91,8 +87,6 @@ def extract_book_data(file):
     edition = lines[1] if len(lines) > 1 else "N/A"
     author = lines[2] if len(lines) > 2 else "Unknown"
 
-    st.session_state.processed_files.add(file.name)
-
     return {
         "Image": file.name,
         "Title": title,
@@ -102,14 +96,26 @@ def extract_book_data(file):
 
 # --- Process Images in Parallel ---
 if uploaded_files:
-    with st.spinner("Processing images..."):
-        with concurrent.futures.ThreadPoolExecutor() as executor:
-            results = list(executor.map(extract_book_data, uploaded_files))
+    # Only process files we haven't seen before
+    files_to_process = [
+        f for f in uploaded_files
+        if f.name not in st.session_state.processed_files
+    ]
 
-        new_entries = [entry for entry in results if entry]
-        st.session_state.book_data.extend(new_entries)
+    if files_to_process:
+        with st.spinner("Processing images..."):
+            with concurrent.futures.ThreadPoolExecutor() as executor:
+                results = list(executor.map(extract_book_data, files_to_process))
 
-    st.success("Images processed and catalogued!")
+            new_entries = [entry for entry in results if entry]
+            st.session_state.book_data.extend(new_entries)
+
+            # Update processed_files **after** threading
+            st.session_state.processed_files.update(f.name for f in files_to_process)
+
+        st.success("Images processed and catalogued!")
+    else:
+        st.info("All uploaded images have already been processed.")
 
 # --- Editable Table View ---
 if st.session_state.book_data:
@@ -134,8 +140,3 @@ if st.session_state.book_data:
         file_name,
         "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     )
-
-
-
-
-
