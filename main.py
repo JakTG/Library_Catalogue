@@ -28,7 +28,7 @@ st.image(
 )
 st.title("Book OCR Extraction with Editable Catalogue")
 st.write(
-    "Automated app to extract information from images "
+    "Automated app to extract information from images (demo currently using fixed values) "
     "and compile everything into a catalogued library that can be downloaded as an Excel file."
 )
 
@@ -105,10 +105,15 @@ if st.session_state.book_data:
     edited_df = st.data_editor(df_books, num_rows="dynamic", use_container_width=True)
     st.session_state.book_data = edited_df.to_dict("records")
 
-    # --- Excel Export (with embedded images) ---
+    # --- Excel Export (with embedded images, no filename text in cells) ---
     output = io.BytesIO()
     with pd.ExcelWriter(output, engine="openpyxl") as writer:
-        edited_df.to_excel(writer, index=False, sheet_name="Catalogue")
+        # Make a copy with the Image column blanked, so only the picture shows
+        df_to_export = edited_df.copy()
+        if "Image" in df_to_export.columns:
+            df_to_export["Image"] = ""
+
+        df_to_export.to_excel(writer, index=False, sheet_name="Catalogue")
         wb = writer.book
         ws = wb["Catalogue"]
 
@@ -142,4 +147,3 @@ if st.session_state.book_data:
         file_name,
         "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     )
-
