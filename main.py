@@ -122,11 +122,14 @@ if st.session_state.book_data:
             if not img_bytes:
                 continue
 
+            # Load, thumbnail, then save to an in-memory PNG buffer
             pil_img = Image.open(io.BytesIO(img_bytes))
-            # thumbnail to keep Excel file reasonable size
             pil_img.thumbnail((120, 120))
+            img_buf = io.BytesIO()
+            pil_img.save(img_buf, format="PNG")
+            img_buf.seek(0)
 
-            xl_img = XLImage(pil_img)
+            xl_img = XLImage(img_buf)
             xl_img.anchor = f"A{row_idx}"  # place image in Image column for this row
             ws.add_image(xl_img)
 
