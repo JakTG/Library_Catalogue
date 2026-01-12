@@ -1,14 +1,55 @@
 # Packages used for the code
 import streamlit as st
-from PIL import Image
+from PIL import Image, UnidentifiedImageError
 import pandas as pd
 import io
 from openpyxl.drawing.image import Image as XLImage  # for embedding images into Excel
 
 # --- DEMO CONSTANTS (change these later if needed) ---
 DEMO_TITLE = "Basic Soil Mechanics"
-DEMO_EDITION = "2nd Edition"   
-DEMO_AUTHOR = "R WHITLOW"          
+DEMO_EDITION = "2nd Edition"
+DEMO_AUTHOR = "R WHITLOW"
+
+
+# ---------- Helpers ----------
+def safe_open_pil_image(img_bytes: bytes):
+    """
+    Safely open uploaded image bytes with PIL.
+    Returns a PIL.Image.Image or None if invalid/corrupt/unsupported.
+    """
+    try:
+        # First open + verify to catch truncated/invalid image files early
+        bio = io.BytesIO(img_bytes)
+        im = Image.open(bio)
+        im.verify()  # verifies file integrity, but leaves the image file closed/unusable
+
+        # Re-open after verify to actually use the image
+        bio2 = io.BytesIO(img_bytes)
+        im2 = Image.open(bio2)
+
+        # Force-load the image data now (helps catch some deferred decode errors)
+        im2.load()
+        return im2
+    except (UnidentifiedImageError, OSError, ValueError):
+        return None
+
+
+def pil_to_excel_image(pil_img: Image.Image, max_size=(120, 120)) -> io.BytesIO:
+    """
+    Make a thumbnail and return a PNG buffer ready for openpyxl XLImage().
+    """
+    img = pil_img.copy()
+    img.thumbnail(max_size)
+
+    # Ensure it's in a PNG-friendly mode
+    if img.mode not in ("RGB", "RGBA"):
+        img = img.convert("RGB")
+
+    buf = io.BytesIO()
+    img.save(buf, format="PNG")
+    buf.seek(0)
+    return buf
+
 
 # --- Session State Init ---
 if "book_data" not in st.session_state:
@@ -71,12 +112,19 @@ if uploaded_files:
 
 
 def demo_book_row(file):
-    """Return a demo row using fixed values instead of OCR, and store image bytes."""
+    """
+    Return a demo row using fixed values instead of OCR, and store image bytes.
+    Skips invalid/corrupt image uploads safely (prevents PIL.UnidentifiedImageError).
+    """
     img_bytes = file.getvalue()
-    st.session_state.image_bytes[file.name] = img_bytes
 
-    # Open once just to validate it is a real image (not needed later)
-    _ = Image.open(io.BytesIO(img_bytes))
+    # Validate it's a real image before storing/using it
+    pil_img = safe_open_pil_image(img_bytes)
+    if pil_img is None:
+        st.warning(f"Skipped '{file.name}': not a valid/decodable image (may be corrupt or mislabeled).")
+        return None
+
+    st.session_state.image_bytes[file.name] = img_bytes
 
     return {
         "Image": file.name,
@@ -92,10 +140,16 @@ if uploaded_files:
         if file.name not in st.session_state.processed_files:
             with st.spinner(f"Adding {file.name} to catalogue..."):
                 row = demo_book_row(file)
-                st.session_state.book_data.append(row)
+                # Mark as processed either way to avoid retry loops on bad files
                 st.session_state.processed_files.add(file.name)
 
-    st.success("All images processed!")
+                if row is not None:
+                    st.session_state.book_data.append(row)
+
+    if st.session_state.book_data:
+        st.success("All valid images processed!")
+    else:
+        st.info("No valid images were processed. Please upload PNG/JPG/JPEG images that open normally.")
 
 # --- Editable Table ---
 if st.session_state.book_data:
@@ -126,26 +180,25 @@ if st.session_state.book_data:
             fname = record.get("Image")
             if not fname:
                 continue
+
             img_bytes = st.session_state.image_bytes.get(fname)
             if not img_bytes:
                 continue
 
-            # Load, thumbnail, then save to an in-memory PNG buffer
-            pil_img = Image.open(io.BytesIO(img_bytes))
-            pil_img.thumbnail((120, 120))  # pixel size of thumbnail
+            pil_img = safe_open_pil_image(img_bytes)
+            if pil_img is None:
+                # If the image is somehow invalid at export time, skip it instead of crashing
+                continue
 
-            img_buf = io.BytesIO()
-            pil_img.save(img_buf, format="PNG")
-            img_buf.seek(0)
-
+            # Create thumbnail buffer for Excel
+            img_buf = pil_to_excel_image(pil_img, max_size=(120, 120))
             xl_img = XLImage(img_buf)
             xl_img.anchor = f"A{row_idx}"  # place image in Image column for this row
             ws.add_image(xl_img)
 
-            # Adjust row height to roughly match the image height
-            # Excel row height uses "points", ~0.75 * pixel height is a decent mapping
-            img_height_pixels = pil_img.size[1]
-            ws.row_dimensions[row_idx].height = img_height_pixels * 0.75
+            # Adjust row height to roughly match the thumbnail height
+            thumb_h_px = min(pil_img.size[1], 120)  # thumbnail height won't exceed 120
+            ws.row_dimensions[row_idx].height = thumb_h_px * 0.75
 
     output.seek(0)
 
@@ -156,4 +209,3 @@ if st.session_state.book_data:
         file_name,
         "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     )
-
