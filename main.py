@@ -69,7 +69,7 @@ st.image(
 )
 st.title("Book OCR Extraction with Editable Catalogue")
 st.write(
-    "Automated app to extract information from images (demo currently using fixed values) "
+    "Automated app to extract information from images "
     "and compile everything into a catalogued library that can be downloaded as an Excel file."
 )
 
@@ -209,5 +209,6 @@ if st.session_state.book_data:
         file_name,
         "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     )
+
 
 
