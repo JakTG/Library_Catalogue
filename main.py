@@ -76,7 +76,7 @@ st.write(
 with st.expander("How to use the app"):
     st.write(
         """
-        1. Upload multiple images of your books (or demo images).
+        1. Uploads multiple images of your books (or demo images).
         2. Select your office location.
         3. The app fills in demo data for Title / Edition / Author.
         4. You can edit the table before exporting to Excel.
@@ -209,4 +209,5 @@ if st.session_state.book_data:
         file_name,
         "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     )
+
 
