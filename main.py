@@ -6,9 +6,9 @@ import io
 from openpyxl.drawing.image import Image as XLImage  # for embedding images into Excel
 
 # --- DEMO CONSTANTS (change these later if needed) ---
-DEMO_TITLE = "Jak Snape"
-DEMO_EDITION = "1421943"   # Sentinel number
-DEMO_AUTHOR = "1"          # Issue number
+DEMO_TITLE = "Basic Soil Mechanics"
+DEMO_EDITION = "2nd Edition"   
+DEMO_AUTHOR = "R WHITLOW"          
 
 # --- Session State Init ---
 if "book_data" not in st.session_state:
@@ -156,3 +156,4 @@ if st.session_state.book_data:
         file_name,
         "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     )
+
