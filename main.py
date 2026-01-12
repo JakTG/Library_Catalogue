@@ -6,9 +6,9 @@ import io
 from openpyxl.drawing.image import Image as XLImage  # for embedding images into Excel
 
 # --- DEMO CONSTANTS (change these later if needed) ---
-DEMO_TITLE = "Basic Soil Mechanics"
-DEMO_EDITION = "2nd Edition"
-DEMO_AUTHOR = "R WHITLOW"
+DEMO_TITLE = "The use of Stereographic Projection in Structural Geology"
+DEMO_EDITION = "3rd Edition"
+DEMO_AUTHOR = "F.C.Phillips"
 
 
 # ---------- Helpers ----------
@@ -209,3 +209,4 @@ if st.session_state.book_data:
         file_name,
         "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     )
+
